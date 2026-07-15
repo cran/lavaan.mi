@@ -5,7 +5,22 @@ Track our progress or report issues on GitHub:
 https://github.com/TDJorgensen/lavaan.mi
 
 
-# lavaan.mi 0.1-0 (in development)
+# lavaan.mi 0.1-1 (in development)
+
+## New Features:
+
+- Argument names for the `fitMeasures()` method are now in `snake_case`, replacing the old convention of dotted names (i.e., `fit.measures=` becomes `fit_measures=`).
+  This is to adopt the latest coding-format conventions, in line with `lavaan` 0.7-1
+    - *Note*: Users passing a custom function (to be called per imputation) must 
+      call `fun=` if they have `lavaan` >= 0.7-1 installed (or `FUN=` if < 0.7).
+
+## Bug Fixes:
+
+- Setting `pool.robust=TRUE` automatically sets `pool.method="D2"` (with message), yet `summary()` failed to report that.
+
+
+
+# lavaan.mi 0.1-0 (on CRAN 10 March 2025)
 
 The `semTools` package has a **Missing Data** suite, which for years included utilities for fitting structural equation models to multiply imputed data sets with the `lavaan` package and automatically pooling the results. These multiple-imputation features continue to grow, justifying their own separate package (and current deprecation in `semTools`).
 
@@ -15,7 +30,7 @@ The `semTools` package has a **Missing Data** suite, which for years included ut
 - Unlike `semTools::runMI()`, users may **not** impute data indirectly via `miPackage=` and `miArgs=` arguments.  This feature was originally included to mimic M*plus*, which allows for model-based imputation.  Because `semTools::runMI()` did not use the specified SEM as an imputation model, the mimicry of the M*plus* functionality was only cosmetic.  Even in `semTools::runMI()`, it was always better to impute (with full control) using dedicated imputation software first (e.g., the `Amelia` or `mice` package, or external software like [Blimp](https://www.appliedmissingdata.com/blimp)), to be analyzed with `lavaan.mi()`.
     - The `blavaan` package does indirectly allow for model-based imputation, if users explicitly request posterior samples of missing values.  It is planned to *eventually* capitalize on that feature with a dedicated function in the `lavaan.mi` package.
 - Because users can pass a vector of multiple (e.g., robust) test statistics to the `lavaan(test=)` argument, there is a new `test=` argument for `lavaan::lavTestLRT()`, enabling users to select which specific $\Delta \chi^2$ test should be calculated for a model comparison.  Accordingly, the `lavTestLRT.mi()` function's `test=` argument has been renamed `pool.method=`, so that users can still pass a `test=` argument to `lavTestLRT.mi(...)`.
-    - The old functions that involved pooling $\chi^2$ test statistics formerly already had a `test=` argument to select `"D1"`, `"D2"`, or `"D3"`.  The `lavaan.mi` package has change that argument to `pool.method=`, as well as implementing the newer `"D4"` method for pooling likelihood-ratio statistics (see **Neww Features** section).
+    - The old functions that involved pooling $\chi^2$ test statistics formerly already had a `test=` argument to select `"D1"`, `"D2"`, or `"D3"`.  The `lavaan.mi` package has changed that argument to `pool.method=`, as well as implementing the newer `"D4"` method for pooling likelihood-ratio statistics (see **New Features** section).
 
 
 ## New Features:

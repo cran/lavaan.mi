@@ -1,5 +1,5 @@
 ### Terrence D. Jorgensen
-### Last updated: 12 February 2025
+### Last updated: 15 July 2026
 ### Class and Methods for lavaan.mi object
 
 
@@ -13,9 +13,9 @@
 ##' @name lavaan.mi-class
 ##' @importClassesFrom lavaan lavaanList
 ##' @aliases lavaan.mi-class  show,lavaan.mi-method  summary,lavaan.mi-method
-##'   fitMeasures,lavaan.mi-method  fitmeasures,lavaan.mi-method
-##'   nobs,lavaan.mi-method  coef,lavaan.mi-method  vcov,lavaan.mi-method
-##'   fitted,lavaan.mi-method  fitted.values,lavaan.mi-method
+##' @aliases fitMeasures,lavaan.mi-method  fitmeasures,lavaan.mi-method
+##' @aliases nobs,lavaan.mi-method  coef,lavaan.mi-method  vcov,lavaan.mi-method
+##' @aliases fitted,lavaan.mi-method  fitted.values,lavaan.mi-method
 ##' @docType class
 ##'
 ##' @slot coefList `list` of estimated coefficients in matrix format (one
@@ -46,18 +46,18 @@
 ##' @slot call,Options,ParTable,pta,Data,Model,meta,timingList,CacheList,optimList,impliedList,loglikList,internalList,funList,external
 ##'   By default, [lavaan.mi()] does not populate the remaining `@*List` slots
 ##'   from the [lavaan::lavaanList-class] class. But they can be added to the call using
-##'   the `store.slots=` argument (passed to [lavaan::lavaanList()] via \dots).
+##'   the `store_slots=` argument (passed to [lavaan::lavaanList()] via \dots).
 ##'
 ##' @param object An object of class [lavaan.mi-class]
 ##' @param header,fit.measures,fm.args,estimates,ci,standardized,std,cov.std,rsquare,remove.unused,modindices,nd,output
 ##'        See descriptions of `summary()` arguments in the help page for
-##'        [lavaan::lavaan-class] class. Also see [lavaan::fitMeasures()] for arguments
-##'        `fit.measures` and `fm.args`.
-##' @param baseline.model,h1.model See [lavaan::fitMeasures()].
+##'        [lavaan::lavaan-class] class.
+##' @param fit_measures,baseline_model,h1_model,fm_args,level
+##'        See [lavaan::fitMeasures()] for descriptions of arguments.
 ##' @param ... Additional arguments passed to [lavTestLRT.mi()], or
 ##'        subsequently to [lavaan::lavTestLRT()]. This is how users can
 ##'        specify a `pool.method=` for the model's \eqn{\chi^2} statistic
-##'        (optionally used in any `fit.measures=`), or set `pool.method="D1"`
+##'        (optionally used in any `fit_measures=`), or set `pool.method="D1"`
 ##'        when `summary(modindices=TRUE)`.
 ##' @param fmi `logical` indicating whether to add the Fraction Missing
 ##'        Information (FMI) and (average) relative increase in variance (ARIV)
@@ -134,11 +134,11 @@
 ##'   (`total = FALSE`).}
 ##'
 ##' \item{fitMeasures}{`signature(object = "lavaan.mi",
-##'     fit.measures = "all", baseline.model = NULL, h1.model = NULL,
-##'     fm.args = list(standard.test = "default", scaled.test = "default",
+##'     fit_measures = "all", baseline_model = NULL, h1_model = NULL,
+##'     fm_args = list(standard.test = "default", scaled.test = "default",
 ##'     rmsea.ci.level = 0.90, rmsea.h0.closefit = 0.05,
 ##'     rmsea.h0.notclosefit = 0.08, robust = TRUE, cat.check.pd = TRUE),
-##'     output = "vector", omit.imps = c("no.conv","no.se"), ...)`:
+##'     output = "vector", level = NULL, omit.imps = c("no.conv","no.se"), ...)`:
 ##'   See [lavaan::fitMeasures()] for details.
 ##'   Pass additional arguments to [lavTestLRT.mi()] via `...`.}
 ##' \item{fitmeasures}{alias for `fitMeasures`.}
@@ -148,7 +148,7 @@
 ##'   data sets.}
 ##'
 ##' \item{summary}{`signature(object = "lavaan.mi", header = TRUE,
-##'    fit.measures = FALSE,fm.args = list(standard.test = "default",
+##'    fit.measures = FALSE, fm.args = list(standard.test = "default",
 ##'    scaled.test = "default", rmsea.ci.level = 0.90, rmsea.h0.closefit = 0.05,
 ##'    rmsea.h0.notclosefit = 0.08, robust = TRUE, cat.check.pd = TRUE),
 ##'    estimates = TRUE, ci = FALSE, standardized = FALSE, std = standardized,
@@ -209,7 +209,7 @@
 ##'   speed   =~ x7 + 1*x8 + 1*x9
 ##' '
 ##' fit0 <- cfa.mi(HS.parallel, data = HS20imps, orthogonal = TRUE)
-##' fitMeasures(fit, baseline.model = fit0, fit.measures = "default",
+##' fitMeasures(fit, baseline_model = fit0, fit_measures = "default",
 ##'             output = "text")
 ##'
 ##' ## See ?lavaan.mi help page for more examples
@@ -219,7 +219,7 @@ setClass("lavaan.mi", contains = "lavaanList",
          slots = c(coefList = "list",     # coefficients in matrix format
                    phiList = "list",      # list of model-implied latent covariance matrices
                    miList = "list",       # modification indices
-                   lavListCall = "list",  # store actual call to lavaanList
+                   lavListCall = "call",  # store actual call to lavaanList
                    convergence = "list")) # also check SEs and Heywood cases
 
 
@@ -444,8 +444,8 @@ lavaan_mi_object_summary <- function(object, omit.imps = c("no.conv", "no.se"),
                               pool.robust = pool.robust)
   }
   attr(res$fit, "add.h0")      <- TRUE
-  attr(res$fit, "pool.method") <- poolChiSq
-  attr(res$fit, "pool.robust") <- pool.robust
+  attr(res$fit, "pool.method") <- attr(attr(res$fit, "header"), "pool.method")
+  attr(res$fit, "pool.robust") <- attr(attr(res$fit, "header"), "pool.robust")
 
   if (estimates) {
     PE <- parameterEstimates.mi(object, omit.imps = omit.imps,

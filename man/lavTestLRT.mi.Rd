@@ -10,18 +10,18 @@ lavTestLRT.mi(
   ...,
   modnames = NULL,
   asANOVA = TRUE,
-  pool.method = c("D4", "D3", "D2"),
-  omit.imps = c("no.conv", "no.se"),
   asymptotic = FALSE,
-  pool.robust = FALSE
+  pool.robust = FALSE,
+  pool.method = ifelse(pool.robust, "D2", "D4"),
+  omit.imps = c("no.conv", "no.se")
 )
 
 \S4method{anova}{lavaan.mi}(object, ...)
 }
 \arguments{
-\item{object}{An object of class \linkS4class{lavaan.mi}}
+\item{object}{An object of class \link[=lavaan.mi-class]{lavaan.mi}}
 
-\item{...}{Additional objects of class \linkS4class{lavaan.mi}, as
+\item{...}{Additional objects of class \link[=lavaan.mi-class]{lavaan.mi}, as
 well as arguments passed to \code{\link[lavaan:lavTestLRT]{lavaan::lavTestLRT()}} when
 \code{pool.method = "D2"} and \code{pool.robust = TRUE}.}
 
@@ -33,11 +33,26 @@ class \code{"anova"}.  If \code{FALSE}, a numeric vector is returned for
 one (pair of) model(s), or a \code{data.frame} is returned for multiple
 pairs of models.}
 
+\item{asymptotic}{\code{logical}. If \code{FALSE} (default), the pooled test
+will be returned as an \emph{F}-distributed statistic with numerator
+(\code{df1}) and denominator (\code{df2}) degrees of freedom.
+If \code{TRUE}, the pooled \emph{F} statistic will be multiplied by its
+\code{df1} on the assumption that its \code{df2} is sufficiently large
+enough that the statistic will be asymptotically \eqn{\chi^2} distributed
+with \code{df1}.}
+
+\item{pool.robust}{\code{logical}. Ignored unless a robust test was requested.
+If \code{pool.robust = TRUE}, the robust test statistic is pooled, which also
+sets \code{pool.method = "D2"} (the only way to pool robust statistics).
+Setting \code{pool.robust = FALSE} will pool the naive test, then apply the
+average scale/shift parameter. The harmonic mean is applied to the scaling
+factor, whereas the arithmetic mean is applied to the shift parameter.}
+
 \item{pool.method}{\code{character} indicating which pooling method to use.
 \itemize{
 \item \code{"D4"}, \code{"new.LRT"}, \code{"cm"}, or \code{"chan.meng"}
 requests the method described by Chan & Meng (2022).
-This is currently the default.
+This is currently the default, unless \code{pool.robust=TRUE}.
 \item \code{"D3"}, \code{"old.LRT"}, \code{"mr"}, or \code{"meng.rubin"}
 requests the method described by Meng & Rubin (1992).
 \item \code{"D2"}, \code{"LMRR"}, or \code{"Li.et.al"} requests the
@@ -59,21 +74,6 @@ as Heywood cases. Specific imputation numbers can also be included in this
 argument, in case users want to  apply their own custom omission criteria
 (or simulations can use different numbers of imputations without
 redundantly refitting the model).}
-
-\item{asymptotic}{\code{logical}. If \code{FALSE} (default), the pooled test
-will be returned as an \emph{F}-distributed statistic with numerator
-(\code{df1}) and denominator (\code{df2}) degrees of freedom.
-If \code{TRUE}, the pooled \emph{F} statistic will be multiplied by its
-\code{df1} on the assumption that its \code{df2} is sufficiently large
-enough that the statistic will be asymptotically \eqn{\chi^2} distributed
-with \code{df1}.}
-
-\item{pool.robust}{\code{logical}. Ignored unless \code{pool.method = "D2"} and a
-robust test was requested. If \code{pool.robust = TRUE}, the robust test
-statistic is pooled, whereas \code{pool.robust = FALSE} will pool
-the naive test statistic (or difference statistic) and apply the average
-scale/shift parameter to it. The harmonic mean is applied to the scaling
-factor, whereas the arithmetic mean is applied to the shift parameter.}
 }
 \value{
 \itemize{
@@ -100,7 +100,8 @@ data sets.
 \details{
 The \code{"D2"} method is available using any estimator and test statistic.
 When using a likelihood-based estimator, 2 additional methods are available
-to pool the LRT.
+to pool the LRT, both of which perform better in small samples
+(Grund et al., 2023; Jia, 2024).
 \itemize{
 \item The Meng & Rubin (1992) method, commonly referred to as \code{"D3"}.
 This method has many problems, discussed in Chan & Meng (2022).
@@ -110,6 +111,16 @@ Grund et al. (2023), resolves problems with \code{"D3"}.
 When \code{"D2"} is not explicitly requested in situations it is the only
 applicable method, (e.g., DWLS for categorical outcomes), users are notified
 that \code{pool.method} was set to \code{"D2"}.
+
+When a robust adjustment was requested during estimation (e.g., \code{estimator="=MLMV"}),
+the recommended method is to apply the \verb{pool.method=} to the standard \verb{test=}
+statistic.  A robust adjustment to that pooled statistic is then made, using
+the harmonic-mean scaling factor (and average shift parameter, when relevant)
+across imputations.  This method is the default (\code{pool.robust=FALSE}),
+justified by simulation research showing near-nominal Type I error rates for
+continuous non-normal data (Jia, 2024). Further simulation research is needed
+to compare these methods for ordinal data, as only the \code{pool.robust=TRUE}
+method has been investigated (Liu & Sriutaisuk, 2020; Liu et al., 2021).
 
 \code{pool.method = "Mplus"} implies \code{"D3"} and \code{asymptotic = TRUE}
 (see Asparouhov & Muthen, 2010).
@@ -184,7 +195,7 @@ fitMeasures(fit1c, output = "text",
 \references{
 Asparouhov, T., & Muthen, B. (2010). \emph{Chi-square statistics
 with multiple imputation}. Technical Report. Retrieved from
-\url{http://www.statmodel.com/}
+\url{https://www.statmodel.com/}
 
 Chan, K. W., & Meng, X. L. (2022). Multiple improvements of multiple
 imputation likelihood ratio tests. \emph{Statistica Sinica, 32},
@@ -198,10 +209,24 @@ likelihood ratio tests in multiply imputed data sets.
 \emph{Psychological Methods, 28}(5), 1207--1221.
 \doi{10.1037/met0000556}
 
+Jia, F. (2024). Pooling test statistics across multiply imputed datasets
+for nonnormal items. \emph{Behavior Research Methods, 56}(3), 1229--1243.
+\doi{10.3758/s13428-023-02088-3}
+
 Li, K.-H., Meng, X.-L., Raghunathan, T. E., & Rubin, D. B. (1991).
 Significance levels from repeated \emph{p}-values with multiply-imputed
 data. \emph{Statistica Sinica, 1}(1), 65--92. Retrieved from
 \url{https://www.jstor.org/stable/24303994}
+
+Liu, Y., & Sriutaisuk, S. (2020). Evaluation of model fit in structural
+equation models with ordinal missing data: An examination of the \eqn{D_2}
+method. \emph{Structural Equation Modeling, 27}(4), 561--583.
+\doi{10.1080/10705511.2019.1662307}
+
+Liu, Y., Sriutaisuk, S., & Chung, S. (2021). Evaluation of model fit in
+structural equation models with ordinal missing data: a comparison of the
+\eqn{D_2} and MI2S methods. \emph{Structural Equation Modeling, 28}(5), 740--762.
+\doi{10.1080/10705511.2021.1919118}
 
 Meng, X.-L., & Rubin, D. B. (1992). Performing likelihood ratio tests with
 multiply-imputed data sets. \emph{Biometrika, 79}(1), 103--111.

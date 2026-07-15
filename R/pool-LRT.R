@@ -1,5 +1,5 @@
 ### Terrence D. Jorgensen & Yves Rosseel
-### Last updated: 7 March 2025
+### Last updated: 15 July 2026
 ### Pooled likelihood ratio test for multiple imputations
 ### Borrowed source code from lavaan/R/lav_test_LRT.R
 
@@ -15,7 +15,8 @@
 ##'
 ##' The `"D2"` method is available using any estimator and test statistic.
 ##' When using a likelihood-based estimator, 2 additional methods are available
-##' to pool the LRT.
+##' to pool the LRT, both of which perform better in small samples
+##' (Grund et al., 2023; Jia, 2024).
 ##' \itemize{
 ##'   \item The Meng & Rubin (1992) method, commonly referred to as `"D3"`.
 ##'         This method has many problems, discussed in Chan & Meng (2022).
@@ -25,6 +26,16 @@
 ##' When `"D2"` is not explicitly requested in situations it is the only
 ##' applicable method, (e.g., DWLS for categorical outcomes), users are notified
 ##' that `pool.method` was set to `"D2"`.
+##'
+##' When a robust adjustment was requested during estimation (e.g., `estimator="=MLMV"`),
+##' the recommended method is to apply the `pool.method=` to the standard `test=`
+##' statistic.  A robust adjustment to that pooled statistic is then made, using
+##' the harmonic-mean scaling factor (and average shift parameter, when relevant)
+##' across imputations.  This method is the default (`pool.robust=FALSE`),
+##' justified by simulation research showing near-nominal Type I error rates for
+##' continuous non-normal data (Jia, 2024). Further simulation research is needed
+##' to compare these methods for ordinal data, as only the `pool.robust=TRUE`
+##' method has been investigated (Liu & Sriutaisuk, 2020; Liu et al., 2021).
 ##'
 ##' `pool.method = "Mplus"` implies `"D3"` and `asymptotic = TRUE`
 ##' (see Asparouhov & Muthen, 2010).
@@ -44,11 +55,24 @@
 ##'   class `"anova"`.  If `FALSE`, a numeric vector is returned for
 ##'   one (pair of) model(s), or a `data.frame` is returned for multiple
 ##'   pairs of models.
+##' @param asymptotic `logical`. If `FALSE` (default), the pooled test
+##'   will be returned as an *F*-distributed statistic with numerator
+##'   (`df1`) and denominator (`df2`) degrees of freedom.
+##'   If `TRUE`, the pooled *F* statistic will be multiplied by its
+##'   `df1` on the assumption that its `df2` is sufficiently large
+##'   enough that the statistic will be asymptotically \eqn{\chi^2} distributed
+##'   with `df1`.
+##' @param pool.robust `logical`. Ignored unless a robust test was requested.
+##'   If `pool.robust = TRUE`, the robust test statistic is pooled, which also
+##'   sets `pool.method = "D2"` (the only way to pool robust statistics).
+##'   Setting `pool.robust = FALSE` will pool the naive test, then apply the
+##'   average scale/shift parameter. The harmonic mean is applied to the scaling
+##'   factor, whereas the arithmetic mean is applied to the shift parameter.
 ##' @param pool.method `character` indicating which pooling method to use.
 ##'   \itemize{
 ##'     \item `"D4"`, `"new.LRT"`, `"cm"`, or `"chan.meng"`
 ##'           requests the method described by Chan & Meng (2022).
-##'           This is currently the default.
+##'           This is currently the default, unless `pool.robust=TRUE`.
 ##'     \item `"D3"`, `"old.LRT"`, `"mr"`, or `"meng.rubin"`
 ##'           requests the method described by Meng & Rubin (1992).
 ##'     \item `"D2"`, `"LMRR"`, or `"Li.et.al"` requests the
@@ -57,11 +81,6 @@
 ##'           described in Li, Meng, Raghunathan, & Rubin (1991).
 ##'   }
 ##'   Find additional details in Enders (2010, chapter 8).
-
-#FIXME: Remove these 2 (passed via ...)
-## @param standard.test
-## @param scaled.test
-
 ##' @param omit.imps `character` vector specifying criteria for omitting
 ##'   imputations from pooled results.  Can include any of
 ##'   `c("no.conv", "no.se", "no.npd")`, the first 2 of which are the
@@ -74,19 +93,6 @@
 ##'   argument, in case users want to  apply their own custom omission criteria
 ##'   (or simulations can use different numbers of imputations without
 ##'   redundantly refitting the model).
-##' @param asymptotic `logical`. If `FALSE` (default), the pooled test
-##'   will be returned as an *F*-distributed statistic with numerator
-##'   (`df1`) and denominator (`df2`) degrees of freedom.
-##'   If `TRUE`, the pooled *F* statistic will be multiplied by its
-##'   `df1` on the assumption that its `df2` is sufficiently large
-##'   enough that the statistic will be asymptotically \eqn{\chi^2} distributed
-##'   with `df1`.
-##' @param pool.robust `logical`. Ignored unless `pool.method = "D2"` and a
-##'   robust test was requested. If `pool.robust = TRUE`, the robust test
-##'   statistic is pooled, whereas `pool.robust = FALSE` will pool
-##'   the naive test statistic (or difference statistic) and apply the average
-##'   scale/shift parameter to it. The harmonic mean is applied to the scaling
-##'   factor, whereas the arithmetic mean is applied to the shift parameter.
 ##'
 ##' @return
 ##'
@@ -114,7 +120,7 @@
 ##' @references
 ##'   Asparouhov, T., & Muthen, B. (2010). *Chi-square statistics
 ##'   with multiple imputation*. Technical Report. Retrieved from
-##'   <http://www.statmodel.com/>
+##'   <https://www.statmodel.com/>
 ##'
 ##'   Chan, K. W., & Meng, X. L. (2022). Multiple improvements of multiple
 ##'   imputation likelihood ratio tests. *Statistica Sinica, 32*,
@@ -128,10 +134,24 @@
 ##'   *Psychological Methods, 28*(5), 1207--1221.
 ##'   \doi{10.1037/met0000556}
 ##'
+##'   Jia, F. (2024). Pooling test statistics across multiply imputed datasets
+##'   for nonnormal items. *Behavior Research Methods, 56*(3), 1229--1243.
+##'   \doi{10.3758/s13428-023-02088-3}
+##'
 ##'   Li, K.-H., Meng, X.-L., Raghunathan, T. E., & Rubin, D. B. (1991).
 ##'   Significance levels from repeated *p*-values with multiply-imputed
 ##'   data. *Statistica Sinica, 1*(1), 65--92. Retrieved from
 ##'   <https://www.jstor.org/stable/24303994>
+##'
+##'   Liu, Y., & Sriutaisuk, S. (2020). Evaluation of model fit in structural
+##'   equation models with ordinal missing data: An examination of the \eqn{D_2}
+##'   method. *Structural Equation Modeling, 27*(4), 561--583.
+##'   \doi{10.1080/10705511.2019.1662307}
+##'
+##'   Liu, Y., Sriutaisuk, S., & Chung, S. (2021). Evaluation of model fit in
+##'   structural equation models with ordinal missing data: a comparison of the
+##'   \eqn{D_2} and MI2S methods. *Structural Equation Modeling, 28*(5), 740--762.
+##'   \doi{10.1080/10705511.2021.1919118}
 ##'
 ##'   Meng, X.-L., & Rubin, D. B. (1992). Performing likelihood ratio tests with
 ##'   multiply-imputed data sets. *Biometrika, 79*(1), 103--111.
@@ -210,9 +230,9 @@
 ##'
 ##' @export
 lavTestLRT.mi <- function(object, ..., modnames = NULL, asANOVA = TRUE,
-                          pool.method = c("D4","D3","D2"),
-                          omit.imps = c("no.conv","no.se"),
-                          asymptotic = FALSE, pool.robust = FALSE) {
+                          asymptotic = FALSE, pool.robust = FALSE,
+                          pool.method = ifelse(pool.robust, "D2", "D4"),
+                          omit.imps = c("no.conv","no.se")) {
   ## save model names
   objname <- deparse(substitute(object))
   dotnames <- as.character(sapply(substitute(list(...))[-1], deparse))
@@ -469,7 +489,8 @@ D2.LRT <- function(object, h1 = NULL, useImps, asymptotic = FALSE,
     }
 
     ## call lavaanList() again to run lavTestLRT() on each imputation
-    oldCall$FUN <- function(obj) {
+    lav7 <- utils::packageDescription("lavaan", fields = "Version") >= "0.7-1"
+    oldCall[[ifelse(lav7, "fun", "FUN")]] <- function(obj) {
       fit1 <- try(lavaan::lavaan(PT1, slotOptions = op1, slotData = obj@Data),
                   silent = TRUE)
       if (inherits(fit1, "try-error")) {
@@ -775,7 +796,7 @@ D4.LRT <- function(object, h1 = NULL, useImps, asymptotic = FALSE,
   stackImps <- do.call(rbind, object@DataList[useImps])
 
   ## isolate @lavListCall arguments passed to lavaan()
-  lavListCall <- object@lavListCall[-1]
+  lavListCall <- as.list(object@lavListCall[-1])
   lavListArgNames <- names(formals(lavaan::lavaanList))
   lavArgNames <- setdiff(names(lavListCall), lavListArgNames)
   noNames <- which(nchar(lavArgNames) == 0L)
@@ -916,10 +937,12 @@ robustify <- function(ChiSq, object, h1 = NULL, baseline = FALSE, useImps,
 ## Pools the LRT for 1 model or when comparing a single pair of models.
 ## (formerly lavTestLRT.mi)
 ##' @importFrom lavaan lavListInspect lavTestLRT
-pairwiseLRT <- function(object, h1 = NULL, pool.method = c("D4","D3","D2"),
-                        omit.imps = c("no.conv","no.se"), asymptotic = FALSE,
+pairwiseLRT <- function(object, h1 = NULL,
+                        asymptotic = FALSE, pool.robust = FALSE,
+                        pool.method = ifelse(pool.robust, "D2", "D4"),
+                        omit.imps = c("no.conv","no.se"),
                         standard.test = "standard", scaled.test = "default",
-                        pool.robust = FALSE, ...) {
+                        ...) {
   ## this also checks the class
   useImps <- imps2use(object = object, omit.imps = omit.imps)
   m <- length(useImps)
@@ -1151,10 +1174,11 @@ pairwiseLRT <- function(object, h1 = NULL, pool.method = c("D4","D3","D2"),
 
 ## Iterates over > 2 models to apply pairwiseLRT() sequentially
 ## (borrowed from semTools::compareFit, code for @nested)
-multipleLRT <- function(..., argsLRT = list(), pool.method = c("D4","D3","D2"),
-                        omit.imps = c("no.conv","no.se"), asymptotic = FALSE,
-                        standard.test = "standard", scaled.test = "default",
-                        pool.robust = FALSE) {
+multipleLRT <- function(..., argsLRT = list(),
+                        asymptotic = FALSE, pool.robust = FALSE,
+                        pool.method = ifelse(pool.robust, "D2", "D4"),
+                        omit.imps = c("no.conv","no.se"),
+                        standard.test = "standard", scaled.test = "default") {
   ## separate models from lists of models
   mods <- list(...)
 

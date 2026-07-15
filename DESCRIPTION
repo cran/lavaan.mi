@@ -1,6 +1,6 @@
 Encoding: UTF-8
 Package: lavaan.mi
-Version: 0.1-0
+Version: 0.1-1
 Title: Fit Structural Equation Models to Multiply Imputed Data
 Description: The primary purpose of 'lavaan.mi' is to extend the functionality 
      of the R package 'lavaan', which implements structural equation modeling
@@ -22,13 +22,13 @@ LazyData: yes
 LazyLoad: yes
 URL: https://github.com/TDJorgensen/lavaan.mi
 BugReports: https://github.com/TDJorgensen/lavaan.mi/issues
-Date: 2025-03-07
-RoxygenNote: 7.3.2
+Date: 2026-07-15
+Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2025-03-07 11:54:30 UTC; terrence
-Author: Terrence D. Jorgensen [aut, cre]
-    (<https://orcid.org/0000-0001-5111-6773>),
-  Yves Rosseel [ctb] (<https://orcid.org/0000-0002-4129-4477>)
+Packaged: 2026-07-15 21:27:20 UTC; terrence
+Author: Terrence D. Jorgensen [aut, cre] (ORCID:
+    <https://orcid.org/0000-0001-5111-6773>),
+  Yves Rosseel [ctb] (ORCID: <https://orcid.org/0000-0002-4129-4477>)
 Maintainer: Terrence D. Jorgensen <TJorgensen314@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-03-10 14:30:02 UTC
+Date/Publication: 2026-07-15 22:20:02 UTC
